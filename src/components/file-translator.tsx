@@ -12,11 +12,13 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useToast } from "@/components/ui/use-toast";
 
 export function FileTranslator() {
   const [files, setFiles] = useState([]);
   const [wordList, setWordList] = useState("");
   const [selectedLanguage, setSelectedLanguage] = useState("");
+  const { toast } = useToast();
 
   const handleFileUpload = (event) => {
     const uploadedFiles = Array.from(event.target.files);
@@ -24,6 +26,13 @@ export function FileTranslator() {
   };
 
   const handleDownload = (file) => {
+    if (files.length === 0) {
+      toast({
+        description: "Please upload the file first",
+        variant: "destructive",
+      });
+      return;
+    }
     const url = URL.createObjectURL(file);
     const link = document.createElement("a");
     link.href = url;
@@ -35,6 +44,14 @@ export function FileTranslator() {
   };
 
   const handleDownloadAll = () => {
+    if (files.length === 0) {
+      toast({
+        description: "Please upload the file first",
+        variant: "destructive",
+      });
+      return;
+    }
+
     files.forEach((file) => {
       handleDownload(file);
     });
