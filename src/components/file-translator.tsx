@@ -21,6 +21,23 @@ export function FileTranslator() {
     setFiles(uploadedFiles);
   };
 
+  const handleDownload = (file) => {
+    const url = URL.createObjectURL(file);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = file.name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url); // 메모리 해제
+  };
+
+  const handleDownloadAll = () => {
+    files.forEach((file) => {
+      handleDownload(file);
+    });
+  };
+
   return (
     <div className="container mx-auto py-8 px-4 md:px-6">
       <div className="max-w-3xl mx-auto">
@@ -111,8 +128,8 @@ export function FileTranslator() {
               <h2 className="text-lg font-semibold">
                 Download Translated Files
               </h2>
-              <Button variant="outline" size="sm">
-                Download
+              <Button variant="outline" size="sm" onClick={handleDownloadAll}>
+                Download All
               </Button>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -125,6 +142,13 @@ export function FileTranslator() {
                   <p className="text-sm font-medium truncate max-w-full">
                     {file.name}
                   </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDownload(file)}
+                  >
+                    Download
+                  </Button>
                 </div>
               ))}
             </div>
