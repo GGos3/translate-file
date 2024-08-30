@@ -15,6 +15,8 @@ import { Label } from "@/components/ui/label";
 
 export function FileTranslator() {
   const [files, setFiles] = useState([]);
+  const [wordList, setWordList] = useState("");
+  const [selectedLanguage, setSelectedLanguage] = useState("");
 
   const handleFileUpload = (event) => {
     const uploadedFiles = Array.from(event.target.files);
@@ -36,6 +38,18 @@ export function FileTranslator() {
     files.forEach((file) => {
       handleDownload(file);
     });
+  };
+
+  const handleTranslate = () => {
+    // Implement your file translation logic here
+    // Use `wordList` and `selectedLanguage` for the translation process
+
+    // For example:
+    console.log("Translating with word list:", wordList);
+    console.log("Selected language:", selectedLanguage);
+
+    // After translation, update the files array with translated files
+    // setFiles(translatedFiles);
   };
 
   return (
@@ -80,7 +94,7 @@ export function FileTranslator() {
           <div className="bg-muted rounded-md p-4 mb-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">Translate Options</h2>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={handleTranslate}>
                 Translate
               </Button>
             </div>
@@ -94,9 +108,11 @@ export function FileTranslator() {
                 </label>
                 <Textarea
                   id="text-to-translate"
-                  placeholder="Enter text to translate"
+                  placeholder="Enter Your Word list"
                   className="w-full"
                   rows={4}
+                  value={wordList}
+                  onChange={(event) => setWordList(event.target.value)}
                 />
               </div>
               <div className="bg-card rounded-md p-4">
@@ -106,7 +122,10 @@ export function FileTranslator() {
                 >
                   Translate To
                 </label>
-                <Select>
+                <Select
+                  value={selectedLanguage}
+                  onValueChange={(value) => setSelectedLanguage(value)}
+                >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select language" />
                   </SelectTrigger>
