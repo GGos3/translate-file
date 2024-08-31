@@ -15,58 +15,101 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 
 export function FileTranslator() {
-  const [files, setFiles] = useState([]);
-  const [wordList, setWordList] = useState("");
-  const [selectedLanguage, setSelectedLanguage] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
+  const [wordList, setWordList] = useState<string>("");
+  const [selectedLanguage, setSelectedLanguage] = useState<string>("");
+  const [translatedFiles, setTranslatedFiles] = useState<string[]>([]);
   const { toast } = useToast();
 
-  const handleFileUpload = (event) => {
-    const uploadedFiles = Array.from(event.target.files);
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const uploadedFiles = Array.from(event.target.files || []);
     setFiles(uploadedFiles);
+
+    if (uploadedFiles.length > 0) {
+      const formData = new FormData();
+      uploadedFiles.forEach((file) => {
+        formData.append("files", file);
+      });
+
+      try {
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          setTranslatedFiles(result.fileUrls);
+          toast({
+            description: "Files uploaded successfully!",
+            variant: "success",
+          });
+        } else {
+          const errorText = await response.text();
+          console.error("File upload error:", errorText);
+          throw new Error("File upload failed");
+        }
+      } catch (error) {
+        toast({
+          description: `Failed to upload files: ${error.message}`,
+          variant: "destructive",
+        });
+      }
+    }
   };
 
-  const handleDownload = (file) => {
-    if (files.length === 0) {
+  const handleTranslate = async () => {
+    if (files.length === 0 || !selectedLanguage) {
       toast({
-        description: "Please upload the file first",
+        description: "Please upload a file and select a language",
         variant: "destructive",
       });
       return;
     }
-    const url = URL.createObjectURL(file);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = file.name;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url); // 메모리 해제
+
+    try {
+      const file = files[0];
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("language", selectedLanguage);
+
+      const response = await fetch("/api/translate", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Translation API error:", errorText);
+        throw new Error("Translation failed");
+      }
+
+      const result = await response.json();
+      if (result.error) {
+        console.error("Server error:", result.error);
+        throw new Error(result.error);
+      }
+
+      setTranslatedFiles([result.fileUrl]);
+    } catch (error) {
+      toast({
+        description: `Failed to translate the file: ${error.message}`,
+        variant: "destructive",
+      });
+    }
   };
 
   const handleDownloadAll = () => {
-    if (files.length === 0) {
-      toast({
-        description: "Please upload the file first",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    files.forEach((file) => {
-      handleDownload(file);
+    translatedFiles.forEach((fileUrl) => {
+      const link = document.createElement("a");
+      link.href = fileUrl;
+      link.download = fileUrl.split("/").pop() || "translated_file";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     });
-  };
-
-  const handleTranslate = () => {
-    // Implement your file translation logic here
-    // Use `wordList` and `selectedLanguage` for the translation process
-
-    // For example:
-    console.log("Translating with word list:", wordList);
-    console.log("Selected language:", selectedLanguage);
-
-    // After translation, update the files array with translated files
-    // setFiles(translatedFiles);
   };
 
   return (
@@ -169,19 +212,27 @@ export function FileTranslator() {
               </Button>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {files.map((file, index) => (
+              {translatedFiles.map((fileUrl, index) => (
                 <div
                   key={index}
                   className="bg-card rounded-md p-4 flex flex-col items-center justify-center text-center overflow-hidden"
                 >
                   <FileIcon className="h-8 w-8 mb-2 text-primary" />
                   <p className="text-sm font-medium truncate max-w-full">
-                    {file.name}
+                    {fileUrl.split("/").pop()}
                   </p>
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleDownload(file)}
+                    onClick={() => {
+                      const link = document.createElement("a");
+                      link.href = fileUrl;
+                      link.download =
+                        fileUrl.split("/").pop() || "translated_file";
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    }}
                   >
                     Download
                   </Button>
