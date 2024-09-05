@@ -19,8 +19,9 @@ export function FileTranslator() {
   const [wordList, setWordList] = useState<string>("");
   const [selectedLanguage, setSelectedLanguage] = useState<string>("");
   const [translatedFiles, setTranslatedFiles] = useState<string[]>([]);
+  const [uniqueId, setUniqueId] = useState<string | null>(null); // 고유 아이디 상태
   const { toast } = useToast();
-
+ 
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -41,7 +42,7 @@ export function FileTranslator() {
 
         if (response.ok) {
           const result = await response.json();
-          setTranslatedFiles(result.fileUrls);
+          setUniqueId(result.uniqueId); // 고유 아이디 저장
           toast({
             description: "Files uploaded successfully!",
             variant: "success",
@@ -61,7 +62,7 @@ export function FileTranslator() {
   };
 
   const handleTranslate = async () => {
-    if (files.length === 0 || !selectedLanguage) {
+    if (!uniqueId || !selectedLanguage) {
       toast({
         description: "Please upload a file and select a language",
         variant: "destructive",
@@ -70,14 +71,16 @@ export function FileTranslator() {
     }
 
     try {
-      const file = files[0];
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("language", selectedLanguage);
-
       const response = await fetch("/api/translate", {
         method: "POST",
-        body: formData,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          uniqueId,
+          wordlist: wordList,
+          language: selectedLanguage,
+        }),
       });
 
       if (!response.ok) {
@@ -92,7 +95,7 @@ export function FileTranslator() {
         throw new Error(result.error);
       }
 
-      setTranslatedFiles([result.fileUrl]);
+      setTranslatedFiles(result.fileUrls); // 번역된 파일 URL 상태 업데이트
     } catch (error) {
       toast({
         description: `Failed to translate the file: ${error.message}`,
